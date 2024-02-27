@@ -6,66 +6,53 @@ import {
   Patch,
   Param,
   UseGuards,
-  Request,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { FindUsersDto } from './dto/find-users.dto';
-import { JwtGuard } from '../auth/guards/jwt-auth.guard';
-import { Request as IRequest } from 'express';
-import { UserProfileResponseDto } from './dto/user-profile-response.dto';
+import { JwtGuard } from 'src/auth/guards/jwt.guard';
+import { User } from './entities/user.entity';
+import { SearchUserDto } from './dto/search-user.dto';
+import { Wish } from 'src/wishes/entities/wish.entity';
 
-export interface RequestOwnUser extends IRequest {
-  user: UserProfileResponseDto;
-}
-
+@UseGuards(JwtGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(JwtGuard)
   @Get('me')
-  getOwnUser(@Request() req: RequestOwnUser) {
+  async getUser(@Req() req: Request & { user: User }): Promise<User> {
     return req.user;
   }
 
-  @UseGuards(JwtGuard)
-  @Patch('me')
-  async updateOwnProfile(
-    @Request() req: RequestOwnUser,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
-    const user = await this.usersService.updateOwnProfile(
-      req.user.id,
-      updateUserDto,
-    );
-
-    return user;
-  }
-
-  @UseGuards(JwtGuard)
   @Get('me/wishes')
-  async getOwnWishes(@Request() req: RequestOwnUser) {
-    return await this.usersService.getOwnWishes(req.user.id);
+  async getMyWishes(
+    @Req() req: Request & { user: User },
+  ): Promise<Wish | Wish[]> {
+    return this.usersService.getMyWishes(req.user.id);
   }
 
-  @UseGuards(JwtGuard)
-  @Post('find')
-  findMany(@Body() findUsersDto: FindUsersDto) {
-    return this.usersService.findMany(findUsersDto.query);
-  }
-
-  @UseGuards(JwtGuard)
   @Get(':username')
-  async getUser(@Param('username') username: string) {
-    const user = await this.usersService.getUser(username);
-    return user;
+  async getByUsername(@Param('username') username: string): Promise<User> {
+    return this.usersService.getByUsername(username);
   }
 
-  @UseGuards(JwtGuard)
   @Get(':username/wishes')
-  async getUserWishes(@Param('username') username: string) {
-    const user = await this.usersService.getUserWishes(username);
-    return user;
+  getUserWishes(@Param('username') username: string): Promise<Wish | Wish[]> {
+    return this.usersService.getUserWishes(username);
+  }
+
+  @Patch('me')
+  updateUser(
+    @Body() updateUserDto: UpdateUserDto,
+    @Req() req: Request & { user: User },
+  ): Promise<User> {
+    return this.usersService.updateOne(req.user.id, updateUserDto);
+  }
+
+  @Post('find')
+  findByUserNameOrEmail(@Body() searchUserDto: SearchUserDto): Promise<User[]> {
+    const { query } = searchUserDto;
+    return this.usersService.findMany(query);
   }
 }

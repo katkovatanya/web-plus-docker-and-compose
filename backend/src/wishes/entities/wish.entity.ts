@@ -1,32 +1,17 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  OneToMany,
-  ManyToMany,
-} from 'typeorm';
-import { IsString, Length, IsUrl, Min } from 'class-validator';
-import { User } from '../../users/entities/user.entity';
-import { Wishlist } from '../../wishlists/entities/wishlist.entity';
-import { Offer } from '../../offers/entities/offer.entity';
+import { Entity, Column, OneToMany, ManyToOne } from 'typeorm';
+import { IsString, Length, IsUrl, IsInt } from 'class-validator';
+import { MainEntity } from 'src/custom-entities/main.entity';
+import { Offer } from 'src/offers/entities/offer.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Entity()
-export class Wish {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updateAt: Date;
-
-  @Column()
-  @Length(1, 250)
+export class Wish extends MainEntity {
+  @Column({
+    type: 'varchar',
+    length: 250,
+  })
   @IsString()
+  @Length(1, 250)
   name: string;
 
   @Column()
@@ -38,17 +23,20 @@ export class Wish {
   image: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  @Min(1)
+  @IsInt()
   price: number;
 
-  
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @IsInt()
   raised: number;
 
-  @Column({ type: 'int', default: 0 })
-  copied: number;
+  @ManyToOne(() => User, (user) => user.wishes)
+  owner: User;
 
-  @Column()
+  @Column({
+    type: 'varchar',
+    length: 1024,
+  })
   @IsString()
   @Length(1, 1024)
   description: string;
@@ -56,11 +44,7 @@ export class Wish {
   @OneToMany(() => Offer, (offer) => offer.item)
   offers: Offer[];
 
-  @ManyToOne(() => User, (user) => user.wishes)
-  owner: User;
-
-  @ManyToMany(() => Wishlist, (wishlist) => wishlist.wishes, {
-    onDelete: 'CASCADE',
-  })
-  wishlists: Wishlist[];
+  @Column({ default: 0, nullable: true })
+  @IsInt()
+  copied: number;
 }

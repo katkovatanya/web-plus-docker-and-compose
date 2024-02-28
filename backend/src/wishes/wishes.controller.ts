@@ -1,74 +1,78 @@
 import {
-  Body,
   Controller,
-  Delete,
   Get,
-  Param,
-  Patch,
   Post,
-  Req,
+  Body,
+  Patch,
+  Param,
+  Delete,
   UseGuards,
+  Request,
 } from '@nestjs/common';
-import { JwtGuard } from 'src/auth/guards/jwt.guard';
-import { UpdateWishDto } from './dto/update-wish.dto';
 import { WishesService } from './wishes.service';
-import { User } from 'src/users/entities/user.entity';
+import { CreateWishDto } from './dto/create-wish.dto';
+import { UpdateWishDto } from './dto/update-wish.dto';
+import { JwtGuard } from '../auth/guards/jwt-auth.guard';
+import { RequestOwnUser } from 'src/users/users.controller';
 import { Wish } from './entities/wish.entity';
 
 @Controller('wishes')
 export class WishesController {
   constructor(private readonly wishesService: WishesService) {}
 
+  @UseGuards(JwtGuard)
+  @Post()
+  async createWish(
+    @Request() req: RequestOwnUser,
+    @Body() createWishDto: CreateWishDto,
+  ): Promise<Record<string, never>> {
+    await this.wishesService.createWish(createWishDto, req.user.id);
+    return {};
+  }
+
   @Get('last')
-  getLastWishes(): Promise<Wish[]> {
-    return this.wishesService.getLast();
+  async findLastWish(): Promise<Wish[]> {
+    return await this.wishesService.findLastWishes();
   }
 
   @Get('top')
-  getTopWishes(): Promise<Wish[]> {
-    return this.wishesService.getTop();
+  async findTopWishes(): Promise<Wish[]> {
+    return await this.wishesService.findTopWishes();
   }
 
   @UseGuards(JwtGuard)
   @Get(':id')
-  getById(@Param('id') id: string): Promise<Wish> {
-    return this.wishesService.getById(+id);
-  }
-
-  @UseGuards(JwtGuard)
-  @Post()
-  create(
-    @Body() CreateWishDto,
-    @Req() req: Request & { user: User },
-  ): Promise<Wish> {
-    return this.wishesService.create(CreateWishDto, req.user.id);
+  async findWishById(@Request() req: RequestOwnUser, @Param('id') id: string) {
+    return await this.wishesService.findWishById(req.user, +id);
   }
 
   @UseGuards(JwtGuard)
   @Patch(':id')
-  update(
+  async updateWishById(
+    @Request() req: RequestOwnUser,
     @Param('id') id: string,
-    @Req() req: Request & { user: User },
     @Body() updateWishDto: UpdateWishDto,
-  ): Promise<unknown> {
-    return this.wishesService.updateOne(+id, req.user.id, updateWishDto);
+  ): Promise<Record<string, never>> {
+    await this.wishesService.updateWishById(req.user, +id, updateWishDto);
+    return {};
   }
 
   @UseGuards(JwtGuard)
   @Delete(':id')
-  remove(
+  async removeWishById(
+    @Request() req: RequestOwnUser,
     @Param('id') id: string,
-    @Req() req: Request & { user: User },
-  ): Promise<unknown> {
-    return this.wishesService.removeOne(+id, req.user.id);
+  ): Promise<Wish> {
+    return await this.wishesService.removeWishById(req.user, +id);
   }
 
   @UseGuards(JwtGuard)
   @Post(':id/copy')
-  copy(
-    @Param('id') wishId: string,
-    @Req() req: Request & { user: User },
-  ): Promise<unknown> {
-    return this.wishesService.copiedWish(+wishId, req.user.id);
+  async copyWithById(
+    @Request() req: RequestOwnUser,
+    @Param('id') id: string,
+  ): Promise<Record<string, never>> {
+    await this.wishesService.copyWithById(req.user, +id);
+    return {};
   }
 }

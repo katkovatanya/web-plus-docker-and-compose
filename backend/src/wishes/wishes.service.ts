@@ -1,123 +1,132 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import {
-  DataSource,
-  FindManyOptions,
-  FindOneOptions,
-  Repository,
-  In,
-} from 'typeorm';
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateWishDto } from './dto/create-wish.dto';
 import { UpdateWishDto } from './dto/update-wish.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Wish } from './entities/wish.entity';
-import {
-  ALREADY_OWNED,
-  RAISED_NOT_NULL,
-  USER_NOT_OWNER,
-} from 'src/utils/constants/wishes';
+import { UserProfileResponseDto } from 'src/users/dto/user-profile-response.dto';
 
 @Injectable()
 export class WishesService {
   constructor(
-    private dataSource: DataSource,
-    @InjectRepository(Wish)
-    private wishesRepository: Repository<Wish>,
+    @InjectRepository(Wish) private wishRepository: Repository<Wish>,
   ) {}
 
-  findAll(query: FindManyOptions<Wish>): Promise<Wish[]> {
-    return this.wishesRepository.find(query);
-  }
-
-  findOne(query: FindOneOptions<Wish>): Promise<Wish> {
-    return this.wishesRepository.findOne(query);
-  }
-
-  async findManyByIdArr(idArr: number[]): Promise<Wish[]> {
-    return this.wishesRepository.find({
-      where: { id: In(idArr) },
-    });
-  }
-
-  getLast(): Promise<Wish[]> {
-    return this.findAll({ order: { createdAt: 'DESC' }, take: 40 });
-  }
-
-  getTop(): Promise<Wish[]> {
-    return this.findAll({ order: { copied: 'DESC' }, take: 10 });
-  }
-
-  getById(id: number): Promise<Wish> {
-    return this.findOne({ where: { id }, relations: { owner: true } });
-  }
-
-  create(createWishDto: CreateWishDto, ownerId: number): Promise<Wish> {
-    const wish = this.wishesRepository.create({
+  async createWish(createWishDto: CreateWishDto, id: number) {
+    const wish = {
       ...createWishDto,
-      owner: { id: ownerId },
-    });
-    return this.wishesRepository.save(wish);
-  }
-
-  async updateOne(
-    id: number,
-    userId: number,
-    updateWishDto: UpdateWishDto,
-  ): Promise<unknown> {
-    const wish = await this.findOne({
-      where: { id },
-      relations: { owner: true },
-    });
-    if (userId !== wish.owner.id) {
-      throw new ForbiddenException(USER_NOT_OWNER);
-    }
-    if (updateWishDto.price && wish.raised > 0) {
-      throw new ForbiddenException(RAISED_NOT_NULL);
-    }
-    return this.wishesRepository.update(id, updateWishDto);
-  }
-
-  async removeOne(id: number, userId: number): Promise<unknown> {
-    const wish = await this.findOne({
-      where: { id },
-      relations: { owner: true },
-    });
-    if (userId !== wish.owner.id) {
-      throw new ForbiddenException(USER_NOT_OWNER);
-    }
-
-    this.wishesRepository.delete(id);
-    return wish;
-  }
-
-  async copiedWish(wishId: number, userId: number): Promise<unknown> {
-    const wish = await this.findOne({
-      where: { id: wishId },
-    });
-    const { name, description, image, link, price, copied } = wish;
-
-    const findWish = !!(await this.findOne({
-      where: { name, link, price, owner: { id: userId } },
-      relations: { owner: true },
-    }));
-
-    if (findWish) {
-      throw new ForbiddenException(ALREADY_OWNED);
-    }
-
-    const wishCopy = {
-      name,
-      description,
-      image,
-      link,
-      price,
-      owner: { id: userId },
+      owner: { id },
     };
 
-    await this.dataSource.transaction(async (transManager) => {
-      await transManager.update<Wish>(Wish, wishId, { copied: copied + 1 });
-      await transManager.insert<Wish>(Wish, wishCopy);
+    await this.wishRepository.save(wish);
+  }
+
+  async findLastWishes() {
+    const wishes: Wish[] = await this.wishRepository.find({
+      order: {
+        createdAt: 'desc',
+      },
+      take: 40,
     });
 
-    return {};
+    return wishes;
+  }
+
+  async findTopWishes() {
+    const wishes: Wish[] = await this.wishRepository.find({
+      order: {
+        copied: 'desc',
+      },
+      take: 20,
+    });
+
+    return wishes;
+  }
+
+  async findWishById(user: UserProfileResponseDto, wishId: number) {
+    const wish: Wish = await this.wishRepository.findOne({
+      where: { id: +wishId },
+      relations: {
+        owner: true,
+        offers: {
+          user: true,
+        },
+      },
+    });
+
+    if (!wish) throw new NotFoundException('такого подарка не существует');
+
+    const { offers, ...partialWish } = wish;
+
+    const offersResponse = offers.map((offer) => {
+      const { user, ...rest } = offer;
+      return {
+        ...rest,
+        name: user.username,
+      };
+    });
+
+    return { ...partialWish, offers: offersResponse };
+  }
+
+  async updateWishById(
+    user: UserProfileResponseDto,
+    wishId: number,
+    updateWishDto: UpdateWishDto,
+  ) {
+    const { affected } = await this.wishRepository.update(
+      { owner: { id: user.id }, id: wishId, raised: 0 },
+      updateWishDto,
+    );
+
+    if (!affected)
+      throw new BadRequestException(
+        'Либо это не ваш подарок, либо уже есть поддержавшие',
+      );
+  }
+
+  async removeWishById(user: UserProfileResponseDto, wishId: number) {
+    const removedWish = await this.wishRepository.findOne({
+      where: { owner: { id: user.id }, id: wishId, raised: 0 },
+    });
+
+    if (!removedWish)
+      throw new BadRequestException(
+        'Либо это не ваш подарок, либо уже есть поддержавшие',
+      );
+
+    await this.wishRepository.delete({
+      owner: { id: user.id },
+      id: wishId,
+    });
+
+    return removedWish;
+  }
+
+  async copyWithById(user: UserProfileResponseDto, wishId: number) {
+    const { id, name, link, image, price, description, owner } =
+      await this.wishRepository.findOne({
+        where: { id: wishId },
+        relations: { owner: true },
+      });
+
+    if (user.id === owner.id)
+      throw new BadRequestException('свой подарок скопировать нельзя');
+
+    const createWishDto: CreateWishDto = {
+      name,
+      link,
+      image,
+      price,
+      description,
+    };
+
+    await this.createWish(createWishDto, user.id);
+
+    await this.wishRepository.increment({ id }, 'copied', 1);
   }
 }

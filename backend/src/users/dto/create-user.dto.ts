@@ -1,36 +1,24 @@
-import {
-  IsString,
-  Length,
-  IsEmail,
-  IsUrl,
-  IsOptional,
-  MinLength,
-} from 'class-validator';
+import { IsString, Length, IsEmail, IsUrl, IsOptional } from 'class-validator';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export class CreateUserDto {
   @IsString()
-  @Length(2, 30, {
-    message: 'Имя должно быть от 2 до 30 символов',
-  })
+  @Length(1, 64)
   username: string;
 
-  @IsString()
-  @Length(2, 200, {
-    message: 'Описание должно быть от 2 до 200 символов',
-  })
   @IsOptional()
+  @IsString()
+  @Length(0, 200)
   about: string;
 
   @IsOptional()
-  @IsString()
-  @IsUrl({}, { message: 'Введите корректную ссылку' })
+  @IsUrl()
   avatar: string;
 
-  @IsString()
-  @IsEmail({}, { message: 'Введите корректный Email' })
+  @IsEmail()
   email: string;
 
   @IsString()
-  @MinLength(4, { message: 'Пароль должен быть длинной минимум 4 символа' })
+  @Length(2)
   password: string;
 }

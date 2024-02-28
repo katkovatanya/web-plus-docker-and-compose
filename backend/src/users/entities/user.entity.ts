@@ -1,63 +1,51 @@
-import { Entity, Column, OneToMany } from 'typeorm';
-import {
-  IsString,
-  Length,
-  IsEmail,
-  IsUrl,
-  IsNotEmpty,
-  IsOptional,
-} from 'class-validator';
-import { Exclude } from 'class-transformer';
-import { MainEntity } from 'src/custom-entities/main.entity';
+import { IsNotEmpty, IsString, Length, IsEmail, IsUrl } from 'class-validator';
 import { Offer } from 'src/offers/entities/offer.entity';
 import { Wish } from 'src/wishes/entities/wish.entity';
-import { WishList } from 'src/wishlists/entities/wishlist.entity';
+import { Wishlist } from 'src/wishlists/entities/wishlist.entity';
 import {
-  ABOUT_DEFAULT_TEXT,
-  AVATAR_DEFAULT_LINK,
-} from 'src/utils/constants/users';
+  Column,
+  CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity()
-export class User extends MainEntity {
-  @Column({
-    type: 'varchar',
-    unique: true,
-    length: 30,
-  })
+export class User {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Length(2, 30)
   @IsNotEmpty()
   @IsString()
-  @Length(2, 30)
+  @Column({ unique: true })
   username: string;
 
-  @Column({
-    type: 'varchar',
-    length: 200,
-    default: ABOUT_DEFAULT_TEXT,
-  })
-  @IsOptional()
-  @IsString()
   @Length(2, 200)
+  @IsString()
+  @Column({ default: 'Пока ничего не рассказал о себе' })
   about: string;
 
-  @Column({
-    default: AVATAR_DEFAULT_LINK,
-  })
-  @IsOptional()
   @IsUrl()
+  @Column({ default: 'https://i.pravatar.cc/300' })
   avatar: string;
 
-  @Column({
-    unique: true,
-  })
-  @IsNotEmpty()
   @IsEmail()
+  @IsNotEmpty()
+  @Column({ unique: true, select: false })
   email: string;
 
-  @Column()
-  @Exclude()
-  @IsString()
   @IsNotEmpty()
+  @IsString()
+  @Column({ select: false })
   password: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   @OneToMany(() => Wish, (wish) => wish.owner)
   wishes: Wish[];
@@ -65,6 +53,6 @@ export class User extends MainEntity {
   @OneToMany(() => Offer, (offer) => offer.user)
   offers: Offer[];
 
-  @OneToMany(() => WishList, (wishlist) => wishlist.owner)
-  wishlists: WishList[];
+  @OneToMany(() => Wishlist, (wishlist) => wishlist.owner)
+  wishlists: Wishlist[];
 }

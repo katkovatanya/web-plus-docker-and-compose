@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
-export class SearchUserDto {
+export class FindUsersDto {
   @IsString()
   query: string;
 }

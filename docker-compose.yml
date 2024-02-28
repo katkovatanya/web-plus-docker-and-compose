@@ -5,7 +5,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      image: compose-back-optimal-image
+    image: compose-back-optimal-image
     env_file:
     - ./.env
     restart: on-failure

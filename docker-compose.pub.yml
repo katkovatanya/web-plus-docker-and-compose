@@ -8,20 +8,16 @@ services:
       dockerfile: Dockerfile.pub
     image: backend-release:1.0.2
     env_file: .env
-    environment: 
-      CHOKIDAR_USEPOLLING: "true"
+    environment:
+      - npm_config_audit=false
     ports:
       - '4000:3000'
     depends_on:
       - postgres
     restart: always
-    volumes:
-      - type: bind
-        source: ./backend/src
-        target: /app/src
     networks:
       - backend
-      
+
   frontend:
     container_name: frontend
     build:
@@ -29,18 +25,13 @@ services:
       dockerfile: Dockerfile.pub
     image: frontend-release:1.0.2
     env_file: .env
-    environment: 
-      CHOKIDAR_USEPOLLING: "true"
+    environment:
+      - npm_config_audit=false
     ports:
       - '3005:80'
     restart: always
-    volumes:
-      - type: bind
-        source: ./frontend/src
-        target: /app/src
     networks:
       - frontend
-
   postgres:
     container_name: postgres
     image: postgres:14-alpine
@@ -59,7 +50,6 @@ services:
       - postgres
     networks:
       - backend
-
 volumes:
   postgres_data:
 networks:

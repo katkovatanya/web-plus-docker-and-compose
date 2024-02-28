@@ -4,7 +4,7 @@ services:
   backend:
     container_name: backend
     build:
-      context: backend
+      context: ./backend
       dockerfile: Dockerfile.pub
     image: backend-release:1.0.2
     env_file: .env
@@ -21,7 +21,7 @@ services:
   frontend:
     container_name: frontend
     build:
-      context: frontend
+      context: ./frontend
       dockerfile: Dockerfile.pub
     image: frontend-release:1.0.2
     env_file: .env

@@ -7,8 +7,8 @@ services:
       context: backend
       dockerfile: Dockerfile
     image: compose-back-optimal-image
-    networks: backend
-      - networkName
+    networks: 
+    - backend
     env_file:
     - ./.env
     restart: on-failure

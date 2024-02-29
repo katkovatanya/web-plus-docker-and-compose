@@ -23,7 +23,6 @@ import { WishPartial } from './wishes/entities/wish-partial.entity';
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
-      port: 5432,
       username: 'student',
       password: 'student',
       database: 'kupipodariday',

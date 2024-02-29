@@ -29,7 +29,15 @@ services:
     restart: always
     volumes:
       - postgres_data:/data/postgres
-    env_file: ./.env
+    environment:
+      POSTGRES_USER: student
+      POSTGRES_PASSWORD: student
+      POSTGRES_DB: kupipodariday
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      DB_SYNCHRONIZE: '1'
+      JWT_SECRET: secret
+      PGDATA: /data/postgres
 
   adminer:
       container_name: adminer

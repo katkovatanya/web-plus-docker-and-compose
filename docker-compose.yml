@@ -1,11 +1,14 @@
 version: "3.9"
+
 services:
   backend:
     container_name: backend
     build:
-      context: ./backend
+      context: backend
       dockerfile: Dockerfile
     image: compose-back-optimal-image
+    networks: backend
+      - networkName
     env_file:
     - ./.env
     restart: on-failure
@@ -17,8 +20,10 @@ services:
   frontend:
     container_name: frontend
     build:
-      context: ./frontend
+      context: frontend
       dockerfile: Dockerfile
+    networks:
+      - frontend
     image: compose-front-optimal-image
     ports:
       - '3005:80'
@@ -26,24 +31,24 @@ services:
   postgres:
     container_name: postgres
     image: postgres
-    restart: always
+    networks:
+      - backend
     volumes:
       - postgres_data:/data/postgres
-    environment:
-      POSTGRES_USER: student
-      POSTGRES_PASSWORD: student
-      POSTGRES_DB: kupipodariday
-      POSTGRES_HOST: database
-      POSTGRES_PORT: 5432
-      DB_SYNCHRONIZE: '1'
-      JWT_SECRET: secret
-      PGDATA: /data/postgres
+    env_file:
+    - .env
 
   adminer:
-      container_name: adminer
-      image: adminer
-      ports:
-      - 8081:8080
+    networks:
+    - backend
+    container_name: adminer
+    image: adminer
+    ports:
+    - 8081:8080
+
+networks:
+ frontend:
+ backend:
 
 volumes:
   postgres_data:

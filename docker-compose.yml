@@ -7,8 +7,9 @@ services:
       context: backend
       dockerfile: Dockerfile
     image: compose-back-optimal-image
-    networks: 
-    - backend
+    networks:
+      - frontend
+      - backend
     env_file:
     - ./.env
     restart: on-failure
@@ -47,8 +48,11 @@ services:
     - 8081:8080
 
 networks:
- frontend:
- backend:
+  backend: 
+    driver: bridge
+    internal: true
+  frontend:
+    driver: bridge
 
 volumes:
   postgres_data:

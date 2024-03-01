@@ -35,7 +35,7 @@ services:
     networks:
       - backend
     volumes:
-      - postgres_data:/data/postgres
+      - ./postgres_data:/data/postgres
     env_file:
     - .env
 

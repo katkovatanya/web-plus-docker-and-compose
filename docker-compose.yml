@@ -27,7 +27,7 @@ services:
       - frontend
     image: compose-front-optimal-image
     ports:
-      - '3005:80'
+      - '8081:80'
 
   postgres:
     container_name: postgres
@@ -39,13 +39,6 @@ services:
     env_file:
     - .env
 
-  adminer:
-    networks:
-    - backend
-    container_name: adminer
-    image: adminer
-    ports:
-    - 8081:8080
 
 networks:
   backend: 
